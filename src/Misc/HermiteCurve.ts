@@ -1,4 +1,8 @@
+import { Scene } from "../scene";
+import { Nullable } from "../types";
 import { Scalar } from "../Maths/math.scalar";
+import { RawTexture } from "../Materials/Textures/rawTexture";
+import { Constants } from "../Engines/constants";
 /**
  * Defines HermiteCurveKey type
  * It is like IAnimationKey but all define
@@ -57,5 +61,34 @@ export class HermiteCurve {
             }
         }
         return 0;
+    }
+
+    /**
+     * 从Hermite Curve创建RawTexture 只支持 1:R 3:RGB 4:RGBA
+     * @param scene 
+     * @param curves 
+     * @param width 
+     * @returns 
+     */
+    public static createTexture(scene: Scene, array: HermiteCurve[], width: number): Nullable<RawTexture> {
+        const count = array.length;
+        const data = new Float32Array(width * count);
+        const maxWidthIndex = width - 1;
+        for (let widthIndex = 0; widthIndex < width; widthIndex++) {
+            for (let cI = 0; cI < count; cI++) {
+                //[0,1]
+                data[widthIndex * count + cI] = array[cI].getValue(widthIndex / maxWidthIndex);
+            }
+        }
+        if (data.length === 1) {
+            return RawTexture.CreateRTexture(data, width, 1, scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        }
+        if (data.length === 3) {
+            return RawTexture.CreateRGBTexture(data, width, 1, scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        }
+        if (data.length === 4) {
+            return RawTexture.CreateRGBATexture(data, width, 1, scene, false, false, Constants.TEXTURE_NEAREST_SAMPLINGMODE);
+        }
+        return null;
     }
 }

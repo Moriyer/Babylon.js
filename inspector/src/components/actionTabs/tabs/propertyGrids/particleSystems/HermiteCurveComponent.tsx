@@ -24,7 +24,7 @@ interface IHermiteCurveComponent {
 
 
 }
-const frameScale = 60;
+const frameScale = 100;
 export class HermiteCurveComponent extends React.Component<IHermiteCurveComponent> {
     constructor(props: IHermiteCurveComponent) {
         super(props);
@@ -46,9 +46,21 @@ export class HermiteCurveComponent extends React.Component<IHermiteCurveComponen
                 this.updateToCurve();
             });
         })
+        this._animationCurveEditorContext.onFrameSet.add(() => {
+            setTimeout(() => {
+                this.updateToCurve();
+            });
+        })
+        this._animationCurveEditorContext.onValueSet.add(() => {
+            setTimeout(() => {
+                this.updateToCurve();
+            });
+        })
         this._animationCurveEditorContext.limitLastKeyFrame = this.props.limitLastFrame || false;
         this._animationCurveEditorContext.limitLastKeyValue = this.props.limitLastValue || false;
-
+        if (this.props.curve) {
+            this.editorCurve(this.props.curve);
+        }
     }
     //When keys add
     private _animationGroup?: AnimationGroup;
@@ -84,6 +96,7 @@ export class HermiteCurveComponent extends React.Component<IHermiteCurveComponen
         else {
             this._animation!.setKeys(keys);
         }
+        this._animation!.name = this.props.label;
         this._animationCurveEditorContext.title = this._animationGroup.name || "";
         this._animationCurveEditorContext.animations = this._animationGroup.targetedAnimations;
         this._animationCurveEditorContext.rootAnimationGroup = this._animationGroup;
@@ -95,6 +108,7 @@ export class HermiteCurveComponent extends React.Component<IHermiteCurveComponen
         if (curveKeys.length === animKeys.length && keyId !== undefined) {
             const key = this.props.curve!.keys[keyId];
             const animKey = this._animation!.getKeys()[keyId];
+            console.log(animKey.value);
             key.value = animKey.value;
             key.frame = animKey.frame / frameScale;
             key.inTangent = animKey.inTangent! * frameScale;
@@ -137,8 +151,11 @@ export class HermiteCurveComponent extends React.Component<IHermiteCurveComponen
                             onIconClick={() => {
                                 this.props.onDeleteRequire();
                             }}
-                            buttonLabel="Force Update"
-                            onClick={() => this.updateToCurve()}
+                            buttonLabel="print keys"
+                            onClick={() => {
+                                // this.updateToCurve()
+                                console.log(curve.keys);
+                            }}
                         />
                         <AnimationCurveEditorComponent globalState={this.props.globalState} context={this._animationCurveEditorContext} />
                     </div>
@@ -156,88 +173,6 @@ export class HermiteCurveComponent extends React.Component<IHermiteCurveComponen
 
             </div>
         )
-        // let gradients = this.props.gradients as Nullable<Array<IValueGradient>>;
-
-        // return (
-        //     <div>
-        //         {gradients && gradients.length > 0 && (
-        //             <div className="gradient-container">
-        //                 <LinkButtonComponent
-        //                     label={this.props.label}
-        //                     url={this.props.docLink}
-        //                     icon={faTrash}
-        //                     onIconClick={() => {
-        //                         gradients!.length = 0;
-        //                         this.updateAndSync();
-        //                     }}
-        //                     buttonLabel="Add new step"
-        //                     onClick={() => this.addNewStep()}
-        //                 />
-        //                 {gradients.map((g, i) => {
-        //                     let codeRecorderPropertyName = this.props.codeRecorderPropertyName + `[${i}]`;
-        //                     switch (this.props.mode) {
-        //                         case GradientGridMode.Factor:
-        //                             return (
-        //                                 <FactorGradientStepGridComponent
-        //                                     globalState={this.props.globalState}
-        //                                     lockObject={this.props.lockObject}
-        //                                     onCheckForReOrder={() => this.checkForReOrder()}
-        //                                     onUpdateGradient={() => this.updateAndSync()}
-        //                                     host={this.props.host}
-        //                                     codeRecorderPropertyName={codeRecorderPropertyName}
-        //                                     key={"step-" + i}
-        //                                     lineIndex={i}
-        //                                     gradient={g as FactorGradient}
-        //                                     onDelete={() => this.deleteStep(g)}
-        //                                 />
-        //                             );
-        //                         case GradientGridMode.Color4:
-        //                             return (
-        //                                 <ColorGradientStepGridComponent
-        //                                     globalState={this.props.globalState}
-        //                                     host={this.props.host}
-        //                                     codeRecorderPropertyName={codeRecorderPropertyName}
-        //                                     lockObject={this.props.lockObject}
-        //                                     isColor3={false}
-        //                                     onCheckForReOrder={() => this.checkForReOrder()}
-        //                                     onUpdateGradient={() => this.updateAndSync()}
-        //                                     key={"step-" + i}
-        //                                     lineIndex={i}
-        //                                     gradient={g as ColorGradient}
-        //                                     onDelete={() => this.deleteStep(g)}
-        //                                 />
-        //                             );
-        //                         case GradientGridMode.Color3:
-        //                             return (
-        //                                 <ColorGradientStepGridComponent
-        //                                     globalState={this.props.globalState}
-        //                                     host={this.props.host}
-        //                                     codeRecorderPropertyName={codeRecorderPropertyName}
-        //                                     lockObject={this.props.lockObject}
-        //                                     isColor3={true}
-        //                                     onCheckForReOrder={() => this.checkForReOrder()}
-        //                                     onUpdateGradient={() => this.updateAndSync()}
-        //                                     key={"step-" + i}
-        //                                     lineIndex={i}
-        //                                     gradient={g as Color3Gradient}
-        //                                     onDelete={() => this.deleteStep(g)}
-        //                                 />
-        //                             );
-        //                     }
-        //                 })}
-        //             </div>
-        //         )}
-        //         {(!gradients || gradients.length === 0) && (
-        //             <ButtonLineComponent
-        //                 label={"Use " + this.props.label}
-        //                 onClick={() => {
-        //                     this.props.onCreateRequired();
-        //                     this.forceUpdate();
-        //                 }}
-        //             />
-        //         )}
-        //     </div>
-        // );
     }
 }
 

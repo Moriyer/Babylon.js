@@ -27,7 +27,6 @@ export class Particle {
      * The world direction of the particle in the scene.
      */
     public direction = Vector3.Zero();
-
     /**
      * The color of the particle.
      */

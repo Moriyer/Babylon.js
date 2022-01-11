@@ -31,6 +31,7 @@ import { ThinEngine } from '../Engines/thinEngine';
 import { ThinMaterialHelper } from '../Materials/thinMaterialHelper';
 
 import "../Engines/Extensions/engine.alpha";
+import { HermiteCurve } from "../Misc/HermiteCurve";
 
 declare type AbstractMesh = import("../Meshes/abstractMesh").AbstractMesh;
 declare type ProceduralTexture = import("../Materials/Textures/Procedurals/proceduralTexture").ProceduralTexture;
@@ -390,18 +391,31 @@ export class ParticleSystem extends BaseParticleSystem implements IDisposable, I
                 let directionScale = scaledUpdateSpeed;
 
                 /// Velocity
-                if (this._velocityGradients && this._velocityGradients.length > 0) {
-                    GradientHelper.GetCurrentGradient(ratio, this._velocityGradients, (currentGradient, nextGradient, scale) => {
-                        if (currentGradient !== particle._currentVelocityGradient) {
-                            particle._currentVelocity1 = particle._currentVelocity2;
-                            particle._currentVelocity2 = (<FactorGradient>nextGradient).getFactor();
-                            particle._currentVelocityGradient = (<FactorGradient>currentGradient);
-                        }
-                        directionScale *= Scalar.Lerp(particle._currentVelocity1, particle._currentVelocity2, scale);
-                    });
+                if (!(this.velocityXOverlife || this.velocityYOverlife || this.velocityZOverlife)) {
+                    if (this._velocityGradients && this._velocityGradients.length > 0) {
+                        GradientHelper.GetCurrentGradient(ratio, this._velocityGradients, (currentGradient, nextGradient, scale) => {
+                            if (currentGradient !== particle._currentVelocityGradient) {
+                                particle._currentVelocity1 = particle._currentVelocity2;
+                                particle._currentVelocity2 = (<FactorGradient>nextGradient).getFactor();
+                                particle._currentVelocityGradient = (<FactorGradient>currentGradient);
+                            }
+                            directionScale *= Scalar.Lerp(particle._currentVelocity1, particle._currentVelocity2, scale);
+                        });
+                    }
+                    particle.direction.scaleToRef(directionScale, this._scaledDirection);
                 }
-
-                particle.direction.scaleToRef(directionScale, this._scaledDirection);
+                else {
+                    directionScale = 1;
+                    if (this.velocityXOverlife) {
+                        this._scaledDirection.x = this.velocityXOverlife.getValue(ratio) * scaledUpdateSpeed;
+                    }
+                    if (this.velocityYOverlife) {
+                        this._scaledDirection.y = this.velocityYOverlife.getValue(ratio) * scaledUpdateSpeed;
+                    }
+                    if (this.velocityZOverlife) {
+                        this._scaledDirection.z = this.velocityZOverlife.getValue(ratio) * scaledUpdateSpeed;
+                    }
+                }
 
                 /// Limit velocity
                 if (this._limitVelocityGradients && this._limitVelocityGradients.length > 0) {
@@ -463,15 +477,20 @@ export class ParticleSystem extends BaseParticleSystem implements IDisposable, I
                 particle.direction.addInPlace(this._scaledGravity);
 
                 // Size
-                if (this._sizeGradients && this._sizeGradients.length > 0) {
-                    GradientHelper.GetCurrentGradient(ratio, this._sizeGradients, (currentGradient, nextGradient, scale) => {
-                        if (currentGradient !== particle._currentSizeGradient) {
-                            particle._currentSize1 = particle._currentSize2;
-                            particle._currentSize2 = (<FactorGradient>nextGradient).getFactor();
-                            particle._currentSizeGradient = (<FactorGradient>currentGradient);
-                        }
-                        particle.size = Scalar.Lerp(particle._currentSize1, particle._currentSize2, scale);
-                    });
+                if (!this.sizeOverlife) {
+                    if (this._sizeGradients && this._sizeGradients.length > 0) {
+                        GradientHelper.GetCurrentGradient(ratio, this._sizeGradients, (currentGradient, nextGradient, scale) => {
+                            if (currentGradient !== particle._currentSizeGradient) {
+                                particle._currentSize1 = particle._currentSize2;
+                                particle._currentSize2 = (<FactorGradient>nextGradient).getFactor();
+                                particle._currentSizeGradient = (<FactorGradient>currentGradient);
+                            }
+                            particle.size = Scalar.Lerp(particle._currentSize1, particle._currentSize2, scale);
+                        });
+                    }
+                }
+                else {
+                    particle.size = this.sizeOverlife.getValue(ratio) * particle._currentSize1;
                 }
 
                 // Remap data
@@ -1501,8 +1520,9 @@ export class ParticleSystem extends BaseParticleSystem implements IDisposable, I
             particle.direction.scaleInPlace(emitPower);
 
             // Size
-            if (!this._sizeGradients || this._sizeGradients.length === 0) {
+            if (!this._sizeGradients || this._sizeGradients.length === 0 || this.sizeOverlife) {
                 particle.size = Scalar.RandomRange(this.minSize, this.maxSize);
+                particle._currentSize1 = particle.size;
             } else {
                 particle._currentSizeGradient = this._sizeGradients[0];
                 particle._currentSize1 = particle._currentSizeGradient.getFactor();
@@ -1514,6 +1534,7 @@ export class ParticleSystem extends BaseParticleSystem implements IDisposable, I
                     particle._currentSize2 = particle._currentSize1;
                 }
             }
+
             // Size and scale
             particle.scale.copyFromFloats(Scalar.RandomRange(this.minScaleX, this.maxScaleX), Scalar.RandomRange(this.minScaleY, this.maxScaleY));
 
@@ -1548,17 +1569,6 @@ export class ParticleSystem extends BaseParticleSystem implements IDisposable, I
             }
             particle.angle = Scalar.RandomRange(this.minInitialRotation, this.maxInitialRotation);
 
-            // Velocity
-            if (this._velocityGradients && this._velocityGradients.length > 0) {
-                particle._currentVelocityGradient = this._velocityGradients[0];
-                particle._currentVelocity1 = particle._currentVelocityGradient.getFactor();
-
-                if (this._velocityGradients.length > 1) {
-                    particle._currentVelocity2 = this._velocityGradients[1].getFactor();
-                } else {
-                    particle._currentVelocity2 = particle._currentVelocity1;
-                }
-            }
 
             // Limit velocity
             if (this._limitVelocityGradients && this._limitVelocityGradients.length > 0) {
@@ -2562,6 +2572,23 @@ export class ParticleSystem extends BaseParticleSystem implements IDisposable, I
         if (particleSystem.noiseTexture) {
             serializationObject.noiseTexture = particleSystem.noiseTexture.serialize();
         }
+
+        if (particleSystem.spriteCellIndexOverlife) {
+            serializationObject.spriteCellIndexOverlife = particleSystem.spriteCellIndexOverlife.keys;
+        }
+        if (particleSystem.velocityXOverlife) {
+            serializationObject.velocityXOverlife = particleSystem.velocityXOverlife.keys;
+        }
+        if (particleSystem.velocityYOverlife) {
+            serializationObject.velocityYOverlife = particleSystem.velocityYOverlife.keys;
+        }
+        if (particleSystem.velocityZOverlife) {
+            serializationObject.velocityZOverlife = particleSystem.velocityZOverlife.keys;
+        }
+        if (particleSystem.sizeOverlife) {
+            serializationObject.sizeOverlife = particleSystem.sizeOverlife.keys;
+        }
+
     }
 
     /** @hidden */
@@ -2802,6 +2829,28 @@ export class ParticleSystem extends BaseParticleSystem implements IDisposable, I
 
         particleSystem.disposeOnStop = parsedParticleSystem.disposeOnStop ?? false;
         particleSystem.manualEmitCount = parsedParticleSystem.manualEmitCount ?? -1;
+
+        if (parsedParticleSystem.spriteCellIndexOverlife) {
+            particleSystem.spriteCellIndexOverlife = new HermiteCurve();
+            particleSystem.spriteCellIndexOverlife.keys = parsedParticleSystem.spriteCellIndexOverlife;
+        }
+        if (parsedParticleSystem.velocityXOverlife) {
+            particleSystem.velocityXOverlife = new HermiteCurve();
+            particleSystem.velocityXOverlife.keys = parsedParticleSystem.velocityXOverlife;
+        }
+        if (parsedParticleSystem.velocityYOverlife) {
+            particleSystem.velocityYOverlife = new HermiteCurve();
+            particleSystem.velocityYOverlife.keys = parsedParticleSystem.velocityYOverlife;
+        }
+        if (parsedParticleSystem.velocityZOverlife) {
+            particleSystem.velocityZOverlife = new HermiteCurve();
+            particleSystem.velocityZOverlife.keys = parsedParticleSystem.velocityZOverlife;
+        }
+        if (parsedParticleSystem.sizeOverlife) {
+            particleSystem.sizeOverlife = new HermiteCurve();
+            particleSystem.sizeOverlife.keys = parsedParticleSystem.sizeOverlife;
+        }
+
     }
 
     /**
@@ -2873,3 +2922,11 @@ export class ParticleSystem extends BaseParticleSystem implements IDisposable, I
 }
 
 SubEmitter._ParseParticleSystem = ParticleSystem.Parse;
+
+/**
+ * spriteCellIndexOverlife
+ * velocityXOverlife
+ * velocityYOverlife
+ * velocityZOverlife
+ */
+

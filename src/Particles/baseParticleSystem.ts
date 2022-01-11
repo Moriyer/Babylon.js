@@ -268,6 +268,22 @@ export class BaseParticleSystem {
      */
     public spriteCellIndexOverlife?: HermiteCurve;
     /**
+     * Velocity X Axis Overlife (Hermite Curve)
+     */
+    public velocityXOverlife?: HermiteCurve;
+    /**
+     * Velocity Y Axis Overlife (Hermite Curve)
+     */
+    public velocityYOverlife?: HermiteCurve;
+    /**
+     * Velocity Z Axis Overlife (Hermite Curve)
+     */
+    public velocityZOverlife?: HermiteCurve;
+    /**
+     *Size Overlife (Hermite Curve)
+     */
+    public sizeOverlife?: HermiteCurve;
+    /**
      * Create default hermite curve
      * @returns HermiteCurve
      */
@@ -275,7 +291,7 @@ export class BaseParticleSystem {
         const curve = new HermiteCurve();
         curve.keys = [
             { frame: 0, value: 0, inTangent: 0, outTangent: 0 },
-            { frame: 1, value: 1, inTangent: 0, outTangent: 0 }, ];
+            { frame: 1, value: 1, inTangent: 0, outTangent: 0 },];
         return curve;
     }
     /** Gets or sets a Vector2 used to move the pivot (by default (0,0)) */

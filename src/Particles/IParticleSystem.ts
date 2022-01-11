@@ -7,6 +7,7 @@ import { Scene } from "../scene";
 import { ColorGradient, FactorGradient, Color3Gradient } from "../Misc/gradients";
 import { Effect } from "../Materials/effect";
 import { Observable } from "../Misc/observable";
+import { HermiteCurve } from "../Misc/HermiteCurve";
 
 declare type Animation = import("../Animations/animation").Animation;
 declare type AbstractMesh = import("../Meshes/abstractMesh").AbstractMesh;
@@ -707,4 +708,25 @@ export interface IParticleSystem {
      * @returns the scene
      */
     getScene(): Nullable<Scene>;
+
+    /**
+     * Sprite Cell Index Overlife (Hermite Curve)
+     */
+    spriteCellIndexOverlife?: HermiteCurve;
+    /**
+     * Velocity X Axis Overlife (Hermite Curve)
+     */
+    velocityXOverlife?: HermiteCurve;
+    /**
+     * Velocity Y Axis Overlife (Hermite Curve)
+     */
+    velocityYOverlife?: HermiteCurve;
+    /**
+     * Velocity Z Axis Overlife (Hermite Curve)
+     */
+    velocityZOverlife?: HermiteCurve;
+    /**
+     *Size Overlife (Hermite Curve)
+     */
+     sizeOverlife?: HermiteCurve;
 }

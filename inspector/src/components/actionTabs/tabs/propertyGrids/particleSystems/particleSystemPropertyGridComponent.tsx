@@ -664,6 +664,22 @@ export class ParticleSystemPropertyGridComponent extends React.Component<IPartic
                         mode={GradientGridMode.Factor}
                         lockObject={this.props.lockObject}
                     />
+                    <HermiteCurveComponent
+                        globalState={this.props.globalState}
+                        label="Size Overlife"
+                        curve={(system as any).sizeOverlife}
+                        onCreateRequire={() => {
+                            (system as any).sizeOverlife = (system as any).createHermiteCurve();
+                            this.forceUpdate();
+                            //To refresh Scene Explorer
+                            this.props.globalState.onSelectionRenamedObservable.notifyObservers();
+                        }}
+                        onDeleteRequire={() => {
+                            (system as any).sizeOverlife = undefined;
+                            this.forceUpdate();
+                        }}
+                        scene={system.getScene()!}
+                    />
                 </LineContainerComponent>
                 <LineContainerComponent title="LIFETIME" closed={true} selection={this.props.globalState}>
                     <FloatLineComponent
@@ -877,7 +893,7 @@ export class ParticleSystemPropertyGridComponent extends React.Component<IPartic
                     />
                     <HermiteCurveComponent
                         globalState={this.props.globalState}
-                        label="Index Overlife"
+                        label="CellIndex Curve"
                         curve={(system as any).spriteCellIndexOverlife}
                         onCreateRequire={() => {
                             (system as any).spriteCellIndexOverlife = (system as any).createHermiteCurve();
@@ -887,6 +903,56 @@ export class ParticleSystemPropertyGridComponent extends React.Component<IPartic
                         }}
                         onDeleteRequire={() => {
                             (system as any).spriteCellIndexOverlife = undefined;
+                            this.forceUpdate();
+                        }}
+                        scene={system.getScene()!}
+                    />
+                </LineContainerComponent>
+                <LineContainerComponent title="Velocity" closed={true} selection={this.props.globalState}>
+                    <HermiteCurveComponent
+                        globalState={this.props.globalState}
+                        label="Velocity X"
+                        curve={(system as any).velocityXOverlife}
+                        onCreateRequire={() => {
+                            (system as any).velocityXOverlife = (system as any).createHermiteCurve();
+                            this.forceUpdate();
+                            //To refresh Scene Explorer
+                            this.props.globalState.onSelectionRenamedObservable.notifyObservers();
+                        }}
+                        onDeleteRequire={() => {
+                            (system as any).velocityXOverlife = undefined;
+                            this.forceUpdate();
+                        }}
+                        scene={system.getScene()!}
+                    />
+                    <HermiteCurveComponent
+                        globalState={this.props.globalState}
+                        label="Velocity Y"
+                        curve={(system as any).velocityYOverlife}
+                        onCreateRequire={() => {
+                            (system as any).velocityYOverlife = (system as any).createHermiteCurve();
+                            this.forceUpdate();
+                            //To refresh Scene Explorer
+                            this.props.globalState.onSelectionRenamedObservable.notifyObservers();
+                        }}
+                        onDeleteRequire={() => {
+                            (system as any).velocityYOverlife = undefined;
+                            this.forceUpdate();
+                        }}
+                        scene={system.getScene()!}
+                    />
+                    <HermiteCurveComponent
+                        globalState={this.props.globalState}
+                        label="Velocity Z"
+                        curve={(system as any).velocityZOverlife}
+                        onCreateRequire={() => {
+                            (system as any).velocityZOverlife = (system as any).createHermiteCurve();
+                            this.forceUpdate();
+                            //To refresh Scene Explorer
+                            this.props.globalState.onSelectionRenamedObservable.notifyObservers();
+                        }}
+                        onDeleteRequire={() => {
+                            (system as any).velocityZOverlife = undefined;
                             this.forceUpdate();
                         }}
                         scene={system.getScene()!}
