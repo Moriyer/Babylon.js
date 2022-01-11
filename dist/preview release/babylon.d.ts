@@ -5080,6 +5080,7 @@ declare module BABYLON {
     }
     /**
      * Represents a 3D path made up of multiple 3D points
+     * @see https://doc.babylonjs.com/divingDeeper/mesh/path3D
      */
     export class Path3D {
         /**
@@ -5893,11 +5894,13 @@ declare module BABYLON {
          */
         set hasAlpha(value: boolean);
         get hasAlpha(): boolean;
+        private _getAlphaFromRGB;
         /**
          * Defines if the alpha value should be determined via the rgb values.
          * If true the luminance of the pixel might be used to find the corresponding alpha value.
          */
-        getAlphaFromRGB: boolean;
+        set getAlphaFromRGB(value: boolean);
+        get getAlphaFromRGB(): boolean;
         /**
          * Intensity or strength of the texture.
          * It is commonly used by materials to fine tune the intensity of the texture
@@ -6931,6 +6934,7 @@ declare module BABYLON {
          * Resets the material define values
          */
         reset(): void;
+        private _setDefaultValue;
         /**
          * Converts the material define values to a string
          * @returns - String of material define information
@@ -8848,7 +8852,7 @@ declare module BABYLON {
         /** @hidden */
         _testTriangle(faceIndex: number, trianglePlaneArray: Array<Plane>, p1: Vector3, p2: Vector3, p3: Vector3, hasMaterial: boolean, hostMesh: AbstractMesh): void;
         /** @hidden */
-        _collide(trianglePlaneArray: Array<Plane>, pts: Vector3[], indices: IndicesArray, indexStart: number, indexEnd: number, decal: number, hasMaterial: boolean, hostMesh: AbstractMesh): void;
+        _collide(trianglePlaneArray: Array<Plane>, pts: Vector3[], indices: IndicesArray, indexStart: number, indexEnd: number, decal: number, hasMaterial: boolean, hostMesh: AbstractMesh, invertTriangles?: boolean): void;
         /** @hidden */
         _getResponse(pos: Vector3, vel: Vector3): void;
     }
@@ -27511,6 +27515,360 @@ declare module BABYLON {
 }
 declare module BABYLON {
     /**
+     * Class representing an isovector a vector containing 2 INTEGER coordinates
+     * x axis is horizontal
+     * y axis is 60 deg counter clockwise from positive y axis
+     * @hidden
+     */
+    export class _IsoVector {
+        /** defines the first coordinate */
+        x: number;
+        /** defines the second coordinate */
+        y: number;
+        /**
+         * Creates a new isovector from the given x and y coordinates
+         * @param x defines the first coordinate, must be an integer
+         * @param y defines the second coordinate, must be an integer
+         */
+        constructor(
+        /** defines the first coordinate */
+        x?: number, 
+        /** defines the second coordinate */
+        y?: number);
+        /**
+         * Gets a new IsoVector copied from the IsoVector
+         * @returns a new IsoVector
+         */
+        clone(): _IsoVector;
+        /**
+         * Rotates one IsoVector 60 degrees counter clockwise about another
+         * Please note that this is an in place operation
+         * @param other an IsoVector a center of rotation
+         * @returns the rotated IsoVector
+         */
+        rotate60About(other: _IsoVector): this;
+        /**
+         * Rotates one IsoVector 60 degrees clockwise about another
+         * Please note that this is an in place operation
+         * @param other an IsoVector as center of rotation
+         * @returns the rotated IsoVector
+         */
+        rotateNeg60About(other: _IsoVector): this;
+        /**
+         * For an equilateral triangle OAB with O at isovector (0, 0) and A at isovector (m, n)
+         * Rotates one IsoVector 120 degrees counter clockwise about the center of the triangle
+         * Please note that this is an in place operation
+         * @param m integer a measure a Primary triangle of order (m, n) m > n
+         * @param n >= 0 integer a measure for a Primary triangle of order (m, n)
+         * @returns the rotated IsoVector
+         */
+        rotate120(m: number, n: number): this;
+        /**
+         * For an equilateral triangle OAB with O at isovector (0, 0) and A at isovector (m, n)
+         * Rotates one IsoVector 120 degrees clockwise about the center of the triangle
+         * Please note that this is an in place operation
+         * @param m integer a measure a Primary triangle of order (m, n) m > n
+         * @param n >= 0 integer a measure for a Primary triangle of order (m, n)
+         * @returns the rotated IsoVector
+         */
+        rotateNeg120(m: number, n: number): this;
+        /**
+         * Transforms an IsoVector to one in Cartesian 3D space based on an isovector
+         * @param origin an IsoVector
+         * @returns Point as a Vector3
+         */
+        toCartesianOrigin(origin: _IsoVector, isoGridSize: number): Vector3;
+        /**
+         * Gets a new IsoVector(0, 0)
+         * @returns a new IsoVector
+         */
+        static Zero(): _IsoVector;
+    }
+}
+declare module BABYLON {
+    /**
+     * Class representing data for one face OAB of an equilateral icosahedron
+     * When O is the isovector (0, 0), A is isovector (m, n)
+     * @hidden
+     */
+    export class _PrimaryIsoTriangle {
+        m: number;
+        n: number;
+        cartesian: Vector3[];
+        vertices: _IsoVector[];
+        max: number[];
+        min: number[];
+        vecToIdx: {
+            [key: string]: number;
+        };
+        vertByDist: {
+            [key: string]: number[];
+        };
+        closestTo: number[][];
+        innerFacets: string[][];
+        isoVecsABOB: _IsoVector[][];
+        isoVecsOBOA: _IsoVector[][];
+        isoVecsBAOA: _IsoVector[][];
+        vertexTypes: number[][];
+        coau: number;
+        cobu: number;
+        coav: number;
+        cobv: number;
+        IDATA: PolyhedronData;
+        /**
+        * Creates the PrimaryIsoTriangle Triangle OAB
+        * @param m an integer
+        * @param n an integer
+        */
+        setIndices(): void;
+        calcCoeffs(): void;
+        createInnerFacets(): void;
+        edgeVecsABOB(): void;
+        mapABOBtoOBOA(): void;
+        mapABOBtoBAOA(): void;
+        MapToFace(faceNb: number, geodesicData: PolyhedronData): void;
+        /**Creates a primary triangle
+         * @param m
+         * @param n
+         * @hidden
+         */
+        build(m: number, n: number): this;
+    }
+    /** Builds Polyhedron Data
+    * @hidden
+    */
+    export class PolyhedronData {
+        name: string;
+        category: string;
+        vertex: number[][];
+        face: number[][];
+        edgematch: (number | string)[][];
+        constructor(name: string, category: string, vertex: number[][], face: number[][]);
+    }
+    /**
+     * This class Extends the PolyhedronData Class to provide measures for a Geodesic Polyhedron
+     */
+    export class GeodesicData extends PolyhedronData {
+        /**
+         * @hidden
+         */
+        edgematch: (number | string)[][];
+        /**
+         * @hidden
+         */
+        adjacentFaces: number[][];
+        /**
+         * @hidden
+         */
+        sharedNodes: number;
+        /**
+         * @hidden
+         */
+        poleNodes: number;
+        /**
+         * @hidden
+         */
+        innerToData(face: number, primTri: _PrimaryIsoTriangle): void;
+        /**
+         * @hidden
+         */
+        mapABOBtoDATA(faceNb: number, primTri: _PrimaryIsoTriangle): void;
+        /**
+         * @hidden
+         */
+        mapOBOAtoDATA(faceNb: number, primTri: _PrimaryIsoTriangle): void;
+        /**
+         * @hidden
+         */
+        mapBAOAtoDATA(faceNb: number, primTri: _PrimaryIsoTriangle): void;
+        /**
+         * @hidden
+         */
+        orderData(primTri: _PrimaryIsoTriangle): void;
+        /**
+         * @hidden
+         */
+        setOrder(m: number, faces: number[]): number[];
+        /**
+         * @hidden
+         */
+        toGoldbergPolyhedronData(): PolyhedronData;
+        /**Builds the data for a Geodesic Polyhedron from a primary triangle
+         * @param primTri the primary triangle
+         * @hidden
+         */
+        static BuildGeodesicData(primTri: _PrimaryIsoTriangle): GeodesicData;
+    }
+}
+declare module BABYLON {
+    /**
+     * Defines the set of goldberg data used to create the polygon
+     */
+    export type GoldbergData = {
+        /**
+         * The list of Goldberg faces colors
+         */
+        faceColors: Color4[];
+        /**
+         * The list of Goldberg faces centers
+         */
+        faceCenters: Vector3[];
+        /**
+         * The list of Goldberg faces Z axis
+         */
+        faceZaxis: Vector3[];
+        /**
+         * The list of Goldberg faces Y axis
+         */
+        faceXaxis: Vector3[];
+        /**
+         * The list of Goldberg faces X axis
+         */
+        faceYaxis: Vector3[];
+        /**
+         * Defines the number of shared faces
+         */
+        nbSharedFaces: number;
+        /**
+         * Defines the number of unshared faces
+         */
+        nbUnsharedFaces: number;
+        /**
+         * Defines the total number of goldberg faces
+         */
+        nbFaces: number;
+        /**
+         * Defines the number of goldberg faces at the pole
+         */
+        nbFacesAtPole: number;
+        /**
+         * Defines the number of adjacent faces per goldberg faces
+         */
+        adjacentFaces: number[][];
+    };
+    /**
+     * Mesh for a Goldberg Polyhedron which is made from 12 pentagonal and the rest hexagonal faces
+     * @see https://en.wikipedia.org/wiki/Goldberg_polyhedron
+     */
+    export class GoldbergMesh extends Mesh {
+        /**
+         * Defines the specific Goldberg data used in this mesh construction.
+         */
+        goldbergData: GoldbergData;
+        /**
+         * Gets the related Goldberg face from pole infos
+         * @param poleOrShared Defines the pole index or the shared face index if the fromPole parameter is passed in
+         * @param fromPole Defines an optional pole index to find the related info from
+         * @returns the goldberg face number
+         */
+        relatedGoldbergFace(poleOrShared: number, fromPole?: number): number;
+        private _changeGoldbergFaceColors;
+        /**
+         * Set new goldberg face colors
+         * @param colorRange the new color to apply to the mesh
+         */
+        setGoldbergFaceColors(colorRange: (number | Color4)[][]): void;
+        /**
+         * Updates new goldberg face colors
+         * @param colorRange the new color to apply to the mesh
+         */
+        updateGoldbergFaceColors(colorRange: (number | Color4)[][]): void;
+        private _changeGoldbergFaceUVs;
+        /**
+         * set new goldberg face UVs
+         * @param uvRange the new UVs to apply to the mesh
+         */
+        setGoldbergFaceUVs(uvRange: (number | Vector2)[][]): void;
+        /**
+         * Updates new goldberg face UVs
+         * @param uvRange the new UVs to apply to the mesh
+         */
+        updateGoldbergFaceUVs(uvRange: (number | Vector2)[][]): void;
+        /**
+         * Places a mesh on a particular face of the goldberg polygon
+         * @param mesh Defines the mesh to position
+         * @param face Defines the face to position onto
+         * @param position Defines the position relative to the face we are positioning the mesh onto
+         */
+        placeOnGoldbergFaceAt(mesh: Mesh, face: number, position: Vector3): void;
+        /**
+         * Serialize current mesh
+         * @param serializationObject defines the object which will receive the serialization data
+         */
+        serialize(serializationObject: any): void;
+        /**
+        * Parses a serialized goldberg mesh
+        * @param parsedMesh the serialized mesh
+        * @param scene the scene to create the goldberg mesh in
+        * @returns the created goldberg mesh
+        */
+        static Parse(parsedMesh: any, scene: Scene): GoldbergMesh;
+    }
+}
+declare module BABYLON {
+    /**
+     * Defines the set of data required to create goldberg vertex data.
+     */
+    export type GoldbergVertexDataOption = {
+        /**
+         * the size of the Goldberg, optional default 1
+         */
+        size?: number;
+        /**
+         * allows stretching in the x direction, optional, default size
+         */
+        sizeX?: number;
+        /**
+         * allows stretching in the y direction, optional, default size
+         */
+        sizeY?: number;
+        /**
+         * allows stretching in the z direction, optional, default size
+         */
+        sizeZ?: number;
+        /**
+         * optional and takes the values : Mesh.FRONTSIDE (default), Mesh.BACKSIDE or Mesh.DOUBLESIDE
+         */
+        sideOrientation?: number;
+    };
+    /**
+     * Defines the set of data required to create a goldberg mesh.
+     */
+    export type GoldbergCreationOption = {
+        /**
+         * number of horizontal steps along an isogrid
+         */
+        m?: number;
+        /**
+         * number of angled steps along an isogrid
+         */
+        n?: number;
+        /**
+         * defines if the mesh must be flagged as updatable
+         */
+        updatable?: boolean;
+    } & GoldbergVertexDataOption;
+    /**
+     * Creates the Mesh for a Goldberg Polyhedron
+     * @param name defines the name of the mesh
+     * @param options an object used to set the following optional parameters for the polyhedron, required but can be empty
+     * @param goldBergData polyhedronData defining the Goldberg polyhedron
+     * @returns GoldbergSphere mesh
+     */
+    export function CreateGoldbergVertexData(options: GoldbergVertexDataOption, goldbergData: PolyhedronData): VertexData;
+    /**
+     * Creates the Mesh for a Goldberg Polyhedron which is made from 12 pentagonal and the rest hexagonal faces
+     * @see https://en.wikipedia.org/wiki/Goldberg_polyhedron
+     * @see https://doc.babylonjs.com/divingDeeper/mesh/creation/polyhedra/goldberg_poly
+     * @param name defines the name of the mesh
+     * @param options an object used to set the following optional parameters for the polyhedron, required but can be empty
+     * @param scene defines the hosting scene
+     * @returns Goldberg mesh
+     */
+    export function CreateGoldberg(name: string, options: GoldbergCreationOption, scene?: Nullable<Scene>): GoldbergMesh;
+}
+declare module BABYLON {
+    /**
      * Mesh representing the ground
      */
     export class GroundMesh extends Mesh {
@@ -28009,13 +28367,15 @@ declare module BABYLON {
              */
             function CreateCapsule(name: string, options: ICreateCapsuleOptions, scene: Scene): Mesh;
             /**
-             * Extends a mesh to a Goldberg mesh
-             * Warning  the mesh to convert MUST be an import of a perviously exported Goldberg mesh
-             * @param mesh the mesh to convert
-             * @returns the extended mesh
-             * @deprecated Please use ExtendMeshToGoldberg instead
+             * Creates the Mesh for a Goldberg Polyhedron which is made from 12 pentagonal and the rest hexagonal faces
+             * @see https://en.wikipedia.org/wiki/Goldberg_polyhedron
+             * @param name defines the name of the mesh
+             * @param options an object used to set the following optional parameters for the polyhedron, required but can be empty
+             * @param scene defines the hosting scene
+             * @returns Goldberg mesh
+             * @deprecated Please use MeshBuilder instead
              */
-            function ExtendToGoldberg(mesh: Mesh): Mesh;
+            function CreateGoldberg(name: string, options: GoldbergCreationOption, scene?: Nullable<Scene>): GoldbergMesh;
         }
     /** @hidden */
     export const _injectLTSMesh: (Mesh: TypeofMesh) => void;
@@ -30037,6 +30397,8 @@ declare module BABYLON {
         /** @hidden */
         static _GroundMeshParser: (parsedMesh: any, scene: Scene) => Mesh;
         /** @hidden */
+        static _GoldbergMeshParser: (parsedMesh: any, scene: Scene) => GoldbergMesh;
+        /** @hidden */
         static _LinesMeshParser: (parsedMesh: any, scene: Scene) => Mesh;
         /**
          * Returns a new Mesh object parsed from the source provided.
@@ -30107,6 +30469,8 @@ declare module BABYLON {
         addInstance(instance: InstancedMesh): void;
         /** @hidden */
         removeInstance(instance: InstancedMesh): void;
+        /** @hidden */
+        _shouldConvertRHS(): boolean;
     }
 }
 declare module BABYLON {
@@ -30159,193 +30523,6 @@ declare module BABYLON {
     export const CapsuleBuilder: {
         CreateCapsule: typeof CreateCapsule;
     };
-}
-declare module BABYLON {
-    /**
-     * Class representing an isovector a vector containing 2 INTEGER coordinates
-     * x axis is horizontal
-     * y axis is 60 deg counter clockwise from positive y axis
-     * @hidden
-     */
-    export class _IsoVector {
-        /** defines the first coordinate */
-        x: number;
-        /** defines the second coordinate */
-        y: number;
-        /**
-         * Creates a new isovector from the given x and y coordinates
-         * @param x defines the first coordinate, must be an integer
-         * @param y defines the second coordinate, must be an integer
-         */
-        constructor(
-        /** defines the first coordinate */
-        x?: number, 
-        /** defines the second coordinate */
-        y?: number);
-        /**
-         * Gets a new IsoVector copied from the IsoVector
-         * @returns a new IsoVector
-         */
-        clone(): _IsoVector;
-        /**
-         * Rotates one IsoVector 60 degrees counter clockwise about another
-         * Please note that this is an in place operation
-         * @param other an IsoVector a center of rotation
-         * @returns the rotated IsoVector
-         */
-        rotate60About(other: _IsoVector): this;
-        /**
-         * Rotates one IsoVector 60 degrees clockwise about another
-         * Please note that this is an in place operation
-         * @param other an IsoVector as center of rotation
-         * @returns the rotated IsoVector
-         */
-        rotateNeg60About(other: _IsoVector): this;
-        /**
-         * For an equilateral triangle OAB with O at isovector (0, 0) and A at isovector (m, n)
-         * Rotates one IsoVector 120 degrees counter clockwise about the center of the triangle
-         * Please note that this is an in place operation
-         * @param m integer a measure a Primary triangle of order (m, n) m > n
-         * @param n >= 0 integer a measure for a Primary triangle of order (m, n)
-         * @returns the rotated IsoVector
-         */
-        rotate120(m: number, n: number): this;
-        /**
-         * For an equilateral triangle OAB with O at isovector (0, 0) and A at isovector (m, n)
-         * Rotates one IsoVector 120 degrees clockwise about the center of the triangle
-         * Please note that this is an in place operation
-         * @param m integer a measure a Primary triangle of order (m, n) m > n
-         * @param n >= 0 integer a measure for a Primary triangle of order (m, n)
-         * @returns the rotated IsoVector
-         */
-        rotateNeg120(m: number, n: number): this;
-        /**
-         * Transforms an IsoVector to one in Cartesian 3D space based on an isovector
-         * @param origin an IsoVector
-         * @returns Point as a Vector3
-         */
-        toCartesianOrigin(origin: _IsoVector, isoGridSize: number): Vector3;
-        /**
-         * Gets a new IsoVector(0, 0)
-         * @returns a new IsoVector
-         */
-        static Zero(): _IsoVector;
-    }
-}
-declare module BABYLON {
-    /**
-     * Class representing data for one face OAB of an equilateral icosahedron
-     * When O is the isovector (0, 0), A is isovector (m, n)
-     * @hidden
-     */
-    export class _PrimaryIsoTriangle {
-        m: number;
-        n: number;
-        cartesian: Vector3[];
-        vertices: _IsoVector[];
-        max: number[];
-        min: number[];
-        vecToIdx: {
-            [key: string]: number;
-        };
-        vertByDist: {
-            [key: string]: number[];
-        };
-        closestTo: number[][];
-        innerFacets: string[][];
-        isoVecsABOB: _IsoVector[][];
-        isoVecsOBOA: _IsoVector[][];
-        isoVecsBAOA: _IsoVector[][];
-        vertexTypes: number[][];
-        coau: number;
-        cobu: number;
-        coav: number;
-        cobv: number;
-        IDATA: PolyhedronData;
-        /**
-        * Creates the PrimaryIsoTriangle Triangle OAB
-        * @param m an integer
-        * @param n an integer
-        */
-        setIndices(): void;
-        calcCoeffs(): void;
-        createInnerFacets(): void;
-        edgeVecsABOB(): void;
-        mapABOBtoOBOA(): void;
-        mapABOBtoBAOA(): void;
-        MapToFace(faceNb: number, geodesicData: PolyhedronData): void;
-        /**Creates a primary triangle
-         * @param m
-         * @param n
-         * @hidden
-         */
-        build(m: number, n: number): this;
-    }
-    /** Builds Polyhedron Data
-    * @hidden
-    */
-    export class PolyhedronData {
-        name: string;
-        category: string;
-        vertex: number[][];
-        face: number[][];
-        edgematch: (number | string)[][];
-        constructor(name: string, category: string, vertex: number[][], face: number[][]);
-    }
-    /**
-     * This class Extends the PolyhedronData Class to provide measures for a Geodesic Polyhedron
-     */
-    export class GeodesicData extends PolyhedronData {
-        /**
-         * @hidden
-         */
-        edgematch: (number | string)[][];
-        /**
-         * @hidden
-         */
-        adjacentFaces: number[][];
-        /**
-         * @hidden
-         */
-        sharedNodes: number;
-        /**
-         * @hidden
-         */
-        poleNodes: number;
-        /**
-         * @hidden
-         */
-        innerToData(face: number, primTri: _PrimaryIsoTriangle): void;
-        /**
-         * @hidden
-         */
-        mapABOBtoDATA(faceNb: number, primTri: _PrimaryIsoTriangle): void;
-        /**
-         * @hidden
-         */
-        mapOBOAtoDATA(faceNb: number, primTri: _PrimaryIsoTriangle): void;
-        /**
-         * @hidden
-         */
-        mapBAOAtoDATA(faceNb: number, primTri: _PrimaryIsoTriangle): void;
-        /**
-         * @hidden
-         */
-        orderData(primTri: _PrimaryIsoTriangle): void;
-        /**
-         * @hidden
-         */
-        setOrder(m: number, faces: number[]): number[];
-        /**
-         * @hidden
-         */
-        toGoldbergData(): PolyhedronData;
-        /**Builds the data for a Geodesic Polyhedron from a primary triangle
-         * @param primTri the primary triangle
-         * @hidden
-         */
-        static BuildGeodesicData(primTri: _PrimaryIsoTriangle): GeodesicData;
-    }
 }
 declare module BABYLON {
     /**
@@ -31981,16 +32158,21 @@ declare module BABYLON {
         };
         protected _enable(enable: boolean): void;
         /**
+         * Helper function to mark defines as being dirty.
+         */
+        protected readonly markAllDefinesAsDirty: () => void;
+        /**
          * Creates a new material plugin
          * @param material parent material of the plugin
          * @param name name of the plugin
          * @param priority priority of the plugin
          * @param defines list of defines used by the plugin. The value of the property is the default value for this property
          * @param addToPluginList true to add the plugin to the list of plugins managed by the material plugin manager of the material (default: true)
+         * @param enable true to enable the plugin (it is handy if the plugin does not handle properties to switch its current activation)
          */
         constructor(material: Material, name: string, priority: number, defines?: {
             [key: string]: any;
-        }, addToPluginList?: boolean);
+        }, addToPluginList?: boolean, enable?: boolean);
         /**
          * Gets the current class name useful for serialization or dynamic coding.
          * @returns The class name.
@@ -36712,6 +36894,8 @@ declare module BABYLON {
         /** @hidden */
         _processCollisionsForSubMeshes(collider: Collider, transformMatrix: Matrix): AbstractMesh;
         /** @hidden */
+        _shouldConvertRHS(): boolean;
+        /** @hidden */
         _checkCollision(collider: Collider): AbstractMesh;
         /** @hidden */
         _generatePointsArray(): boolean;
@@ -39232,6 +39416,7 @@ declare module BABYLON {
          * @param axis2 defines the second axis
          * @param axis3 defines the third axis
          * @returns a new Vector3
+         * @see https://doc.babylonjs.com/divingDeeper/mesh/transforms/center_origin/target_align
          */
         static RotationFromAxis(axis1: DeepImmutable<Vector3>, axis2: DeepImmutable<Vector3>, axis3: DeepImmutable<Vector3>): Vector3;
         /**
@@ -44363,7 +44548,7 @@ declare module BABYLON {
         /**
          * (WebGPU only) True (default) to be in compatibility mode, meaning rendering all existing scenes without artifacts (same rendering than WebGL).
          * Setting the property to false will improve performances but may not work in some scenes if some precautions are not taken.
-         * See @TODO WEBGPU DOC PAGE for more details
+         * See https://doc.babylonjs.com/advanced_topics/webGPU/webGPUOptimization/webGPUNonCompatibilityMode for more details
          */
         get compatibilityMode(): boolean;
         set compatibilityMode(mode: boolean);
@@ -46606,7 +46791,7 @@ declare module BABYLON {
          * @param options defines the options used to create the texture
          * @param delayGPUTextureCreation true to delay the texture creation the first time it is really needed. false to create it right away
          * @param source source type of the texture
-         * @returns a new render target texture stored in an InternalTexture
+         * @returns a new internal texture
          */
         _createInternalTexture(size: TextureSize, options: boolean | InternalTextureCreationOptions, delayGPUTextureCreation?: boolean, source?: InternalTextureSource): InternalTexture;
         /** @hidden */
@@ -54887,7 +55072,6 @@ declare module BABYLON {
         private _referenceSpace;
         private _baseLayerWrapper;
         private _baseLayerRTTProvider;
-        private _sessionEnded;
         private _xrNavigator;
         private _sessionMode;
         /**
@@ -54931,6 +55115,14 @@ declare module BABYLON {
          * or get the offset the player is currently at.
          */
         viewerReferenceSpace: XRReferenceSpace;
+        /**
+         * Are we currently in the XR loop?
+         */
+        inXRFrameLoop: boolean;
+        /**
+         * Are we in an XR session?
+         */
+        inXRSession: boolean;
         /**
          * Constructs a WebXRSessionManager, this must be initialized within a user action before usage
          * @param scene The scene which the session should be created for
@@ -55060,6 +55252,12 @@ declare module BABYLON {
          * @returns a promise that resolves once the framerate has been set
          */
         updateTargetFrameRate(rate: number): Promise<void>;
+        /**
+         * Run a callback in the xr render loop
+         * @param callback the callback to call when in XR Frame
+         * @param ignoreIfNotInSession if no session is currently running, run it first thing on the next session
+         */
+        runInXRFrame(callback: () => void, ignoreIfNotInSession?: boolean): void;
         /**
          * Check if fixed foveation is supported on this device
          */
@@ -64184,6 +64382,7 @@ declare module BABYLON {
 declare module BABYLON.Debug {
     /**
          * The Axes viewer will show 3 axes in a specific point in space
+         * @see https://doc.babylonjs.com/toolsAndResources/utilities/World_Axes
          */
     export class AxesViewer {
         private _xAxis;
@@ -67235,14 +67434,6 @@ declare module BABYLON {
 }
 declare module BABYLON {
     /** @hidden */
-    export interface IWebGPUPipelineContextVertexInputsCache {
-        indexBuffer: Nullable<GPUBuffer>;
-        indexOffset: number;
-        vertexStartSlot: number;
-        vertexBuffers: GPUBuffer[];
-        vertexOffsets: number[];
-    }
-    /** @hidden */
     export interface IWebGPURenderPipelineStageDescriptor {
         vertexStage: GPUProgrammableStage;
         fragmentStage?: GPUProgrammableStage;
@@ -67792,7 +67983,6 @@ declare module BABYLON {
         textureAdditionalUsages: number;
         constructor(existingTexture?: Nullable<GPUTexture>);
         set(hardwareTexture: GPUTexture): void;
-        setMSAATexture(hardwareTexture: GPUTexture): void;
         setUsage(textureSource: number, generateMipMaps: boolean, isCube: boolean, width: number, height: number): void;
         createView(descriptor?: GPUTextureViewDescriptor, createViewForWriting?: boolean): void;
         reset(): void;
@@ -67851,7 +68041,6 @@ declare module BABYLON {
         private static _GetBlockInformationFromFormat;
         private static _IsHardwareTexture;
         private static _IsInternalTexture;
-        static GetCompareFunction(compareFunction: Nullable<number>): GPUCompareFunction;
         static IsImageBitmap(imageBitmap: ImageBitmap | {
             width: number;
             height: number;
@@ -67912,6 +68101,7 @@ declare module BABYLON {
         private static _GetWrappingMode;
         private static _GetSamplerWrappingDescriptor;
         private static _GetSamplerDescriptor;
+        static GetCompareFunction(compareFunction: Nullable<number>): GPUCompareFunction;
         getSampler(sampler: TextureSampler, bypassCache?: boolean, hash?: number): GPUSampler;
     }
 }
@@ -68046,7 +68236,7 @@ declare module BABYLON {
     /** @hidden */
     class NodeState {
         values: {
-            [name: number]: NodeState;
+            [id: number]: NodeState;
         };
         pipeline: GPURenderPipeline;
         constructor();
@@ -68172,8 +68362,8 @@ declare module BABYLON {
         buffers: {
             [name: string]: Nullable<WebGPUDataBuffer>;
         };
-        materialContextUpdateId: number;
         indirectDrawBuffer?: GPUBuffer;
+        private _materialContextUpdateId;
         private _bufferManager;
         private _useInstancing;
         private _indirectDrawData?;
@@ -68649,7 +68839,7 @@ declare module BABYLON {
         /**
          * (WebGPU only) True (default) to be in compatibility mode, meaning rendering all existing scenes without artifacts (same rendering than WebGL).
          * Setting the property to false will improve performances but may not work in some scenes if some precautions are not taken.
-         * See @TODO WEBGPU DOC PAGE for more details
+         * See https://doc.babylonjs.com/advanced_topics/webGPU/webGPUOptimization/webGPUNonCompatibilityMode for more details
          */
         get compatibilityMode(): boolean;
         set compatibilityMode(mode: boolean);
@@ -68844,7 +69034,7 @@ declare module BABYLON {
          */
         getAttributes(pipelineContext: IPipelineContext, attributesNames: string[]): number[];
         /**
-         * Activates an effect, mkaing it the current one (ie. the one used for rendering)
+         * Activates an effect, making it the current one (ie. the one used for rendering)
          * @param effect defines the effect to activate
          */
         enableEffect(effect: Nullable<Effect | DrawWrapper>): void;
@@ -68874,7 +69064,7 @@ declare module BABYLON {
          * @param options defines the options used to create the texture
          * @param delayGPUTextureCreation true to delay the texture creation the first time it is really needed. false to create it right away
          * @param source source type of the texture
-         * @returns a new render target texture stored in an InternalTexture
+         * @returns a new internal texture
          */
         _createInternalTexture(size: TextureSize, options: boolean | InternalTextureCreationOptions, delayGPUTextureCreation?: boolean, source?: InternalTextureSource): InternalTexture;
         /**
@@ -74748,6 +74938,10 @@ declare module BABYLON {
          * The create custom shape handler function to be called when using BABYLON.PhysicsImposter.CustomImpostor
          */
         onCreateCustomShape: (impostor: PhysicsImpostor) => any;
+        /**
+         * The create custom mesh impostor handler function to support building custom mesh impostor vertex data (Ex: Ammo.btSmoothTriangleMesh)
+         */
+        onCreateCustomMeshImpostor: (impostor: PhysicsImpostor) => any;
         private _isImpostorInContact;
         private _isImpostorPairInContact;
         private _stepSimulation;
@@ -79705,12 +79899,18 @@ declare module BABYLON {
 declare module BABYLON {
     /**
      * Creates the VertexData for a tiled plane
-     * @param options an object used to set the following optional parameters for the box, required but can be empty
+     * @see https://doc.babylonjs.com/divingDeeper/mesh/creation/set/tiled_plane
+     * @param options an object used to set the following optional parameters for the tiled plane, required but can be empty
       * * pattern a limited pattern arrangement depending on the number
+      * * size of the box
+      * * width of the box, overwrites size
+      * * height of the box, overwrites size
       * * tileSize sets the width, height and depth of the tile to the value of size, optional default 1
       * * tileWidth sets the width (x direction) of the tile, overwrites the width set by size, optional, default size
       * * tileHeight sets the height (y direction) of the tile, overwrites the height set by size, optional, default size
       * * sideOrientation optional and takes the values : Mesh.FRONTSIDE (default), Mesh.BACKSIDE or Mesh.DOUBLESIDE
+      * * alignHorizontal places whole tiles aligned to the center, left or right of a row
+      * * alignVertical places whole tiles aligned to the center, left or right of a column
       * * frontUvs only usable when you create a double-sided mesh, used to choose what parts of the texture image to crop and apply on the front side, optional, default vector4 (0, 0, 1, 1)
       * * backUVs only usable when you create a double-sided mesh, used to choose what parts of the texture image to crop and apply on the back side, optional, default vector4 (0, 0, 1, 1)
      * @returns the VertexData of the tiled plane
@@ -79731,22 +79931,21 @@ declare module BABYLON {
     }): VertexData;
     /**
      * Creates a tiled plane mesh
-     * * The parameter `pattern` will, depending on value, do nothing or
-     * * * flip (reflect about central vertical) alternate tiles across and up
-     * * * flip every tile on alternate rows
-     * * * rotate (180 degs) alternate tiles across and up
-     * * * rotate every tile on alternate rows
-     * * * flip and rotate alternate tiles across and up
-     * * * flip and rotate every tile on alternate rows
-     * * The parameter `tileSize` sets the size (float) of each tile side (default 1)
-     * * You can set some different tile dimensions by using the parameters `tileWidth` and `tileHeight` (both by default have the same value of `tileSize`)
-     * * If you create a double-sided mesh, you can choose what parts of the texture image to crop and stick respectively on the front and the back sides with the parameters `frontUVs` and `backUVs` (Vector4). Detail here : https://doc.babylonjs.com/babylon101/discover_basic_elements#side-orientation
-     * * sideOrientation optional and takes the values : Mesh.FRONTSIDE (default), Mesh.BACKSIDE or Mesh.DOUBLESIDE
-     * * frontUvs only usable when you create a double-sided mesh, used to choose what parts of the texture image to crop and apply on the front side, optional, default vector4 (0, 0, 1, 1)
-     * * backUVs only usable when you create a double-sided mesh, used to choose what parts of the texture image to crop and apply on the back side, optional, default vector4 (0, 0, 1, 1)
-     * @see https://doc.babylonjs.com/how_to/set_shapes#box
+     * @see https://doc.babylonjs.com/divingDeeper/mesh/creation/set/tiled_plane
      * @param name defines the name of the mesh
-     * @param options defines the options used to create the mesh
+     * @param options an object used to set the following optional parameters for the tiled plane, required but can be empty
+      * * pattern a limited pattern arrangement depending on the number
+      * * size of the box
+      * * width of the box, overwrites size
+      * * height of the box, overwrites size
+      * * tileSize sets the width, height and depth of the tile to the value of size, optional default 1
+      * * tileWidth sets the width (x direction) of the tile, overwrites the width set by size, optional, default size
+      * * tileHeight sets the height (y direction) of the tile, overwrites the height set by size, optional, default size
+      * * sideOrientation optional and takes the values : Mesh.FRONTSIDE (default), Mesh.BACKSIDE or Mesh.DOUBLESIDE
+      * * alignHorizontal places whole tiles aligned to the center, left or right of a row
+      * * alignVertical places whole tiles aligned to the center, left or right of a column
+      * * frontUvs only usable when you create a double-sided mesh, used to choose what parts of the texture image to crop and apply on the front side, optional, default vector4 (0, 0, 1, 1)
+      * * backUVs only usable when you create a double-sided mesh, used to choose what parts of the texture image to crop and apply on the back side, optional, default vector4 (0, 0, 1, 1)
      * @param scene defines the hosting scene
      * @returns the box mesh
      */
@@ -79776,12 +79975,22 @@ declare module BABYLON {
 declare module BABYLON {
     /**
      * Creates the VertexData for a tiled box
-     * @param options an object used to set the following optional parameters for the box, required but can be empty
-      * * faceTiles sets the pattern, tile size and number of tiles for a face
+     * @see https://doc.babylonjs.com/divingDeeper/mesh/creation/set/tiled_box
+     * @param options an object used to set the following optional parameters for the tiled box, required but can be empty
+      * * pattern sets the rotation or reflection pattern for the tiles,
+      * * size of the box
+      * * width of the box, overwrites size
+      * * height of the box, overwrites size
+      * * depth of the box, overwrites size
+      * * tileSize sets the size of a tile
+      * * tileWidth sets the tile width and overwrites tileSize
+      * * tileHeight sets the tile width and overwrites tileSize
       * * faceUV an array of 6 Vector4 elements used to set different images to each box side
       * * faceColors an array of 6 Color3 elements used to set different colors to each box side
+      * * alignHorizontal places whole tiles aligned to the center, left or right of a row
+      * * alignVertical places whole tiles aligned to the center, left or right of a column
       * * sideOrientation optional and takes the values : Mesh.FRONTSIDE (default), Mesh.BACKSIDE or Mesh.DOUBLESIDE
-     * @returns the VertexData of the box
+     * @returns the VertexData of the TiledBox
      */
     export function CreateTiledBoxVertexData(options: {
         pattern?: number;
@@ -79799,14 +80008,23 @@ declare module BABYLON {
         sideOrientation?: number;
     }): VertexData;
     /**
-     * Creates a box mesh
-     * faceTiles sets the pattern, tile size and number of tiles for a face     * * You can set different colors and different images to each box side by using the parameters `faceColors` (an array of 6 Color3 elements) and `faceUV` (an array of 6 Vector4 elements)
-     * * Please read this tutorial : https://doc.babylonjs.com/how_to/createbox_per_face_textures_and_colors
-     * * You can also set the mesh side orientation with the values : BABYLON.Mesh.FRONTSIDE (default), BABYLON.Mesh.BACKSIDE or BABYLON.Mesh.DOUBLESIDE
-     * * If you create a double-sided mesh, you can choose what parts of the texture image to crop and stick respectively on the front and the back sides with the parameters `frontUVs` and `backUVs` (Vector4). Detail here : https://doc.babylonjs.com/babylon101/discover_basic_elements#side-orientation
-     * * The mesh can be set to updatable with the boolean parameter `updatable` (default false) if its internal geometry is supposed to change once created
+     * Creates a tiled box mesh
+     * @see https://doc.babylonjs.com/divingDeeper/mesh/creation/set/tiled_box
      * @param name defines the name of the mesh
-     * @param options defines the options used to create the mesh
+     * @param options an object used to set the following optional parameters for the tiled box, required but can be empty
+      * * pattern sets the rotation or reflection pattern for the tiles,
+      * * size of the box
+      * * width of the box, overwrites size
+      * * height of the box, overwrites size
+      * * depth of the box, overwrites size
+      * * tileSize sets the size of a tile
+      * * tileWidth sets the tile width and overwrites tileSize
+      * * tileHeight sets the tile width and overwrites tileSize
+      * * faceUV an array of 6 Vector4 elements used to set different images to each box side
+      * * faceColors an array of 6 Color3 elements used to set different colors to each box side
+      * * alignHorizontal places whole tiles aligned to the center, left or right of a row
+      * * alignVertical places whole tiles aligned to the center, left or right of a column
+      * * sideOrientation optional and takes the values : Mesh.FRONTSIDE (default), Mesh.BACKSIDE or Mesh.DOUBLESIDE
      * @param scene defines the hosting scene
      * @returns the box mesh
      */
@@ -79827,7 +80045,7 @@ declare module BABYLON {
     }, scene?: Nullable<Scene>): Mesh;
     /**
      * Class containing static functions to help procedurally build meshes
-     * @deprecated use CreateTildeBox instead
+     * @deprecated use CreateTiledBox instead
      */
     export const TiledBoxBuilder: {
         CreateTiledBox: typeof CreateTiledBox;
@@ -80189,6 +80407,7 @@ declare module BABYLON {
     /**
      * Creates the Mesh for a Geodesic Polyhedron
      * @see https://en.wikipedia.org/wiki/Geodesic_polyhedron
+     * @see https://doc.babylonjs.com/divingDeeper/mesh/creation/polyhedra/geodesic_poly
      * @param name defines the name of the mesh
      * @param options an object used to set the following optional parameters for the polyhedron, required but can be empty
      * * m number of horizontal steps along an isogrid
@@ -80222,64 +80441,6 @@ declare module BABYLON {
         frontUVs?: Vector4;
         backUVs?: Vector4;
     }, scene?: Nullable<Scene>): Mesh;
-}
-declare module BABYLON {
-    /**
-     * Creates the Mesh for a Goldberg Polyhedron
-     * @param name defines the name of the mesh
-     * @param options an object used to set the following optional parameters for the polyhedron, required but can be empty
-     * * m number of horizontal steps along an isogrid
-     * * n number of angled steps along an isogrid
-     * * size the size of the Goldberg, optional default 1
-     * * sizeX allows stretching in the x direction, optional, default size
-     * * sizeY allows stretching in the y direction, optional, default size
-     * * sizeZ allows stretching in the z direction, optional, default size
-     * * faceUV an array of Vector4 elements used to set different images to the top, rings and bottom respectively
-     * * faceColors an array of Color3 elements used to set different colors to the top, rings and bottom respectively
-     * * subdivisions increasing the subdivisions increases the number of faces, optional, default 4
-     * * sideOrientation optional and takes the values : Mesh.FRONTSIDE (default), Mesh.BACKSIDE or Mesh.DOUBLESIDE
-     * * frontUvs only usable when you create a double-sided mesh, used to choose what parts of the texture image to crop and apply on the front side, optional, default vector4 (0, 0, 1, 1)
-     * * backUVs only usable when you create a double-sided mesh, used to choose what parts of the texture image to crop and apply on the back side, optional, default vector4 (0, 0, 1, 1)
-     * @param goldBergData polyhedronData defining the Goldberg polyhedron
-     * @returns GoldbergSphere mesh
-     */
-    export function CreateGoldbergVertexData(options: {
-        size?: number;
-        sizeX?: number;
-        sizeY?: number;
-        sizeZ?: number;
-        sideOrientation?: number;
-    }, goldbergData: PolyhedronData): VertexData;
-    /**
-     * Creates the Mesh for a Goldberg Polyhedron which is made from 12 pentagonal and the rest hexagonal faces
-     * @see https://en.wikipedia.org/wiki/Goldberg_polyhedron
-     * @param name defines the name of the mesh
-     * @param options an object used to set the following optional parameters for the polyhedron, required but can be empty
-     * * m number of horizontal steps along an isogrid
-     * * n number of angled steps along an isogrid
-     * * size the size of the Goldberg, optional default 1
-     * * sizeX allows stretching in the x direction, optional, default size
-     * * sizeY allows stretching in the y direction, optional, default size
-     * * sizeZ allows stretching in the z direction, optional, default size
-     * * updatable defines if the mesh must be flagged as updatable
-     * * sideOrientation optional and takes the values : Mesh.FRONTSIDE (default), Mesh.BACKSIDE or Mesh.DOUBLESIDE
-     * @param scene defines the hosting scene
-     * @returns Goldberg mesh
-     */
-    export function CreateGoldberg(name: string, options: {
-        m?: number;
-        n?: number;
-        size?: number;
-        sizeX?: number;
-        sizeY?: number;
-        sizeZ?: number;
-        updatable?: boolean;
-        sideOrientation?: number;
-    }, scene?: Nullable<Scene>): Mesh;
-    /**
-     * Function to use when extending the mesh class to a Goldberg class
-     */
-    export const ExtendMeshToGoldberg: (mesh: Mesh) => Mesh;
 }
 declare module BABYLON {
     /**
